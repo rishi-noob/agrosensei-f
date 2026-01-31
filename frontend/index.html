@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agro Sensei - AI-Powered Agriculture Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-green: #2d5016;
+            --accent-gold: #d4a574;
+            --earth-brown: #8b6f47;
+            --light-cream: #faf8f5;
+            --dark-soil: #1a1410;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Karla', sans-serif;
+            background-color: var(--light-cream);
+            color: var(--dark-soil);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .feature-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-green) 0%, #3d6a1f 100%);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(45, 80, 22, 0.3);
+        }
+        
+        .input-field:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success { background-color: #10b981; }
+        .notification.error { background-color: #ef4444; }
+        .notification.warning { background-color: #f59e0b; }
+        .notification.info { background-color: #3b82f6; }
+        
+        .hero-bg {
+            background: linear-gradient(135deg, rgba(45, 80, 22, 0.9) 0%, rgba(139, 111, 71, 0.8) 100%),
+                        url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2670&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid var(--primary-green);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .api-key-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .api-key-modal.show {
+            display: flex;
+        }
+        
+        .drag-over {
+            border-color: var(--primary-green) !important;
+            background-color: #f0fdf4 !important;
+        }
+        
+        .crop-result-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .alert-success { border-left-color: #10b981; background-color: #f0fdf4; }
+        .alert-warning { border-left-color: #f59e0b; background-color: #fffbeb; }
+        .alert-error { border-left-color: #ef4444; background-color: #fef2f2; }
+    </style>
+</head>
+<body>
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+    
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="api-key-modal">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-key text-blue-600 mr-2"></i>Setup API Key
+            </h2>
+            <p class="text-gray-600 mb-6">Enter your API key to enable AI-powered crop disease analysis.</p>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">API Provider</label>
+                <select id="api-provider" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                    <option value="openai">OpenAI GPT-4o (Vision)</option>
+                    <option value="gemini">Google Gemini Vision</option>
+                    <option value="anthropic">Anthropic Claude Vision</option>
+                </select>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">API Key</label>
+                <input type="password" id="api-key-input" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
+                       placeholder="Enter your API key">
+            </div>
+            
+            <div class="flex space-x-3">
+                <button id="save-api-key" 
+                        class="flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Save
+                </button>
+                <button id="demo-mode-btn" 
+                        class="flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-play mr-2"></i>Demo Mode
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sticky Header -->
+    <header class="bg-white shadow-lg sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold" style="color: var(--primary-green);">
+                <i class="fas fa-seedling mr-2"></i>Agro Sensei
+            </div>
+            <div class="hidden md:flex space-x-6 items-center">
+                <a href="#" onclick="showPage('home'); return false;" class="nav-link text-gray-600 hover:text-green-700 font-medium">Home</a>
+                <a href="#" onclick="showPage('crop-recommendation'); return false;" class="nav-link text-gray-600 hover:text-green-700 font-medium">Crop Advice</a>
+                <a href="#" onclick="showPage('disease-detection'); return false;" class="nav-link text-gray-600 hover:text-green-700 font-medium">Disease Detection</a>
+                <a href="#" onclick="showPage('community'); return false;" class="nav-link text-gray-600 hover:text-green-700 font-medium">Community</a>
+                <a href="#" onclick="showPage('marketplace'); return false;" class="nav-link text-gray-600 hover:text-green-700 font-medium">Marketplace</a>
+            </div>
+            <button class="md:hidden text-gray-600" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+        </nav>
+    </header>
+    
+    <!-- HOME PAGE -->
+    <div id="home-page" class="page active">
+        <!-- Hero Section -->
+        <section class="hero-bg text-white py-24 md:py-32">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="text-4xl md:text-6xl font-bold mb-6">Cultivating Intelligence, Harvesting Success</h1>
+                <p class="text-lg md:text-xl mb-8 max-w-3xl mx-auto">AI-powered agriculture platform helping farmers make better decisions with crop recommendations, disease detection, and expert community support.</p>
+                <div class="flex justify-center items-center space-x-4 flex-wrap">
+                    <button onclick="showPage('crop-recommendation')" class="btn-primary text-white px-8 py-4 rounded-full font-bold text-lg mb-4">
+                        <i class="fas fa-seedling mr-2"></i>Get Crop Advice
+                    </button>
+                    <button onclick="showPage('disease-detection')" class="bg-white text-green-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-colors mb-4">
+                        <i class="fas fa-microscope mr-2"></i>Diagnose Disease
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features Section -->
+        <section class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12" style="color: var(--primary-green);">Our Features</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full mb-6" style="background-color: var(--primary-green); color: white;">
+                            <i class="fas fa-seedling text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Crop Recommendation</h3>
+                        <p class="text-gray-600">Get AI-powered crop suggestions based on your soil and climate conditions.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full mb-6" style="background-color: var(--primary-green); color: white;">
+                            <i class="fas fa-microscope text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Disease Detection</h3>
+                        <p class="text-gray-600">Upload crop images for instant AI-powered disease diagnosis and treatment.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full mb-6" style="background-color: var(--primary-green); color: white;">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Community</h3>
+                        <p class="text-gray-600">Connect with farmers and experts to share knowledge and experiences.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full mb-6" style="background-color: var(--primary-green); color: white;">
+                            <i class="fas fa-shopping-cart text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Marketplace</h3>
+                        <p class="text-gray-600">Buy and sell agricultural products, seeds, and equipment.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Statistics Section -->
+        <section class="py-20" style="background-color: var(--light-cream);">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="stat-card p-6 rounded-lg">
+                        <div class="text-4xl font-bold mb-2" style="color: var(--primary-green);">10K+</div>
+                        <div class="text-gray-600 font-medium">Active Farmers</div>
+                    </div>
+                    <div class="stat-card p-6 rounded-lg">
+                        <div class="text-4xl font-bold mb-2" style="color: var(--primary-green);">99.3%</div>
+                        <div class="text-gray-600 font-medium">AI Accuracy</div>
+                    </div>
+                    <div class="stat-card p-6 rounded-lg">
+                        <div class="text-4xl font-bold mb-2" style="color: var(--primary-green);">22+</div>
+                        <div class="text-gray-600 font-medium">Crop Types</div>
+                    </div>
+                    <div class="stat-card p-6 rounded-lg">
+                        <div class="text-4xl font-bold mb-2" style="color: var(--primary-green);">24/7</div>
+                        <div class="text-gray-600 font-medium">AI Support</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- CROP RECOMMENDATION PAGE -->
+    <div id="crop-recommendation-page" class="page">
+        <div class="container mx-auto px-6 py-12">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-4xl font-bold mb-4 text-center" style="color: var(--primary-green);">
+                    <i class="fas fa-seedling mr-3"></i>Crop Recommendation
+                </h1>
+                <p class="text-gray-600 text-center mb-8">Enter your soil and climate parameters to get AI-powered crop recommendations</p>
+                
+                <!-- Input Form -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                    <form id="crop-form" onsubmit="submitCropForm(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Nitrogen (N) - kg/ha</label>
+                                <input type="number" id="N" min="0" max="140" step="1" required
+                                       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                                       placeholder="0-140">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Phosphorus (P) - kg/ha</label>
+                                <input type="number" id="P" min="5" max="145" step="1" required
+                                       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                                       placeholder="5-145">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Potassium (K) - kg/ha</label>
+                                <input type="number" id="K" min="5" max="205" step="1" required
+                                       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                                       placeholder="5-205">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Temperature (°C)</label>
+                                <input type="number" id="temperature" min="8" max="44" step="0.1" required
+                                       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                                       placeholder="8-44">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Humidity (%)</label>
+                                <input type="number" id="humidity" min="14" max="100" step="0.1" required
+                                       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                                       placeholder="14-100">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Soil pH</label>
+                                <input type="number" id="ph" min="3.5" max="10" step="0.1" required
+                                       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                                       placeholder="3.5-10">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 font-bold mb-2">Rainfall (mm)</label>
+                                <input type="number" id="rainfall" min="20" max="300" step="0.1" required
+                                       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                                       placeholder="20-300">
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-center space-x-4">
+                            <button type="submit" id="submit-crop-btn" class="btn-primary text-white px-8 py-3 rounded-lg font-bold">
+                                <i class="fas fa-search mr-2"></i>Get Recommendation
+                            </button>
+                            <button type="button" onclick="resetCropForm()" class="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg font-bold hover:bg-gray-300">
+                                <i class="fas fa-redo mr-2"></i>Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Results Section -->
+                <div id="crop-results" class="hidden">
+                    <!-- Results will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DISEASE DETECTION PAGE -->
+    <div id="disease-detection-page" class="page">
+        <div class="container mx-auto px-6 py-12">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-4xl font-bold mb-4 text-center" style="color: var(--primary-green);">
+                    <i class="fas fa-microscope mr-3"></i>AI Crop Disease Diagnosis
+                </h1>
+                <p class="text-gray-600 text-center mb-8">Upload a photo of your crop for comprehensive AI analysis</p>
+                
+                <!-- Upload Section -->
+                <div id="disease-upload-section" class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                    <div class="flex flex-col md:flex-row justify-center items-center gap-8 mb-8">
+                        <input type="file" id="disease-image-input" class="hidden" accept="image/*">
+                        <button onclick="document.getElementById('disease-image-input').click()" 
+                                class="w-full md:w-72 bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200 text-center hover:border-green-300 transition-all">
+                            <div class="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-camera text-3xl text-green-600"></i>
+                            </div>
+                            <span class="text-xl font-semibold text-gray-700 block mb-2">Upload Image</span>
+                            <p class="text-sm text-gray-500">From gallery or camera</p>
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="runDemoAnalysis()" class="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                            <i class="fas fa-flask mr-2"></i>Try Demo Analysis
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Loading Section -->
+                <div id="disease-loading" class="hidden text-center py-12">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600">Analyzing image with AI...</p>
+                </div>
+                
+                <!-- Results Section -->
+                <div id="disease-results" class="hidden">
+                    <!-- Results will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- COMMUNITY PAGE -->
+    <div id="community-page" class="page">
+        <div class="container mx-auto px-6 py-12">
+            <div class="max-w-6xl mx-auto">
+                <h1 class="text-4xl font-bold mb-4 text-center" style="color: var(--primary-green);">
+                    <i class="fas fa-users mr-3"></i>Farmer Community
+                </h1>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Main Feed -->
+                    <div class="lg:col-span-2">
+                        <!-- Post Creation Form -->
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <textarea id="post-content" rows="4" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 mb-4"
+                                      placeholder="Share your farming experience or ask a question..."></textarea>
+                            <button onclick="createPost()" class="btn-primary text-white px-6 py-2 rounded-lg font-bold">
+                                <i class="fas fa-paper-plane mr-2"></i>Post
+                            </button>
+                        </div>
+                        
+                        <!-- Posts Feed -->
+                        <div id="posts-feed">
+                            <!-- Sample posts -->
+                            <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                                        <i class="fas fa-user text-green-600 text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-800">Rajesh Kumar</div>
+                                        <div class="text-sm text-gray-500">2 hours ago</div>
+                                    </div>
+                                </div>
+                                <p class="text-gray-700 mb-4">Just tried the crop recommendation feature. Got rice as the top suggestion for my soil. Very accurate! 🌾</p>
+                                <div class="flex items-center space-x-6 text-gray-500">
+                                    <button class="hover:text-red-500"><i class="fas fa-heart mr-2"></i>12</button>
+                                    <button class="hover:text-blue-500"><i class="fas fa-comment mr-2"></i>3</button>
+                                    <button class="hover:text-green-500"><i class="fas fa-share mr-2"></i>Share</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                                        <i class="fas fa-user text-green-600 text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-800">Priya Sharma</div>
+                                        <div class="text-sm text-gray-500">5 hours ago</div>
+                                    </div>
+                                </div>
+                                <p class="text-gray-700 mb-4">Can anyone suggest organic fertilizers for wheat cultivation? Looking for sustainable options.</p>
+                                <div class="flex items-center space-x-6 text-gray-500">
+                                    <button class="hover:text-red-500"><i class="fas fa-heart mr-2"></i>8</button>
+                                    <button class="hover:text-blue-500"><i class="fas fa-comment mr-2"></i>5</button>
+                                    <button class="hover:text-green-500"><i class="fas fa-share mr-2"></i>Share</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sidebar -->
+                    <div>
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h3 class="font-bold text-lg mb-4">Trending Topics</h3>
+                            <div class="space-y-2">
+                                <div class="text-green-600 font-medium">#OrganicFarming</div>
+                                <div class="text-green-600 font-medium">#CropRotation</div>
+                                <div class="text-green-600 font-medium">#SustainableAgriculture</div>
+                                <div class="text-green-600 font-medium">#DiseasePrevention</div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-xl p-6">
+                            <h3 class="font-bold text-lg mb-4">Active Discussions</h3>
+                            <div class="text-3xl font-bold text-green-600 mb-2">247</div>
+                            <div class="text-gray-600">Active conversations</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MARKETPLACE PAGE -->
+    <div id="marketplace-page" class="page">
+        <div class="container mx-auto px-6 py-12">
+            <h1 class="text-4xl font-bold mb-4 text-center" style="color: var(--primary-green);">
+                <i class="fas fa-shopping-cart mr-3"></i>AgriMarketplace
+            </h1>
+            
+            <!-- Category Filters -->
+            <div class="flex justify-center flex-wrap gap-4 mb-8">
+                <button onclick="filterProducts('all')" class="category-btn bg-green-600 text-white px-6 py-2 rounded-full font-medium">All Products</button>
+                <button onclick="filterProducts('seeds')" class="category-btn bg-gray-200 text-gray-700 px-6 py-2 rounded-full font-medium hover:bg-gray-300">Seeds</button>
+                <button onclick="filterProducts('equipment')" class="category-btn bg-gray-200 text-gray-700 px-6 py-2 rounded-full font-medium hover:bg-gray-300">Equipment</button>
+                <button onclick="filterProducts('fertilizers')" class="category-btn bg-gray-200 text-gray-700 px-6 py-2 rounded-full font-medium hover:bg-gray-300">Fertilizers</button>
+                <button onclick="filterProducts('produce')" class="category-btn bg-gray-200 text-gray-700 px-6 py-2 rounded-full font-medium hover:bg-gray-300">Produce</button>
+            </div>
+            
+            <!-- Products Grid -->
+            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Sample products -->
+                <div class="product-card bg-white rounded-2xl shadow-xl p-6" data-category="seeds">
+                    <div class="w-full h-48 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-seedling text-6xl text-green-600"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Premium Wheat Seeds</h3>
+                    <p class="text-gray-600 text-sm mb-4">High-yield variety, certified seeds</p>
+                    <div class="text-2xl font-bold text-green-600 mb-4">₹2,500</div>
+                    <button class="w-full btn-primary text-white py-2 rounded-lg font-medium">Buy Now</button>
+                </div>
+                
+                <div class="product-card bg-white rounded-2xl shadow-xl p-6" data-category="equipment">
+                    <div class="w-full h-48 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-tractor text-6xl text-blue-600"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Mini Tractor</h3>
+                    <p class="text-gray-600 text-sm mb-4">Compact and efficient for small farms</p>
+                    <div class="text-2xl font-bold text-green-600 mb-4">₹3,50,000</div>
+                    <button class="w-full btn-primary text-white py-2 rounded-lg font-medium">Contact</button>
+                </div>
+                
+                <div class="product-card bg-white rounded-2xl shadow-xl p-6" data-category="fertilizers">
+                    <div class="w-full h-48 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-flask text-6xl text-yellow-600"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Organic Fertilizer</h3>
+                    <p class="text-gray-600 text-sm mb-4">100% organic, NPK balanced</p>
+                    <div class="text-2xl font-bold text-green-600 mb-4">₹1,200</div>
+                    <button class="w-full btn-primary text-white py-2 rounded-lg font-medium">Buy Now</button>
+                </div>
+                
+                <div class="product-card bg-white rounded-2xl shadow-xl p-6" data-category="produce">
+                    <div class="w-full h-48 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-apple-alt text-6xl text-red-600"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Fresh Tomatoes</h3>
+                    <p class="text-gray-600 text-sm mb-4">Farm fresh, organic produce</p>
+                    <div class="text-2xl font-bold text-green-600 mb-4">₹400</div>
+                    <button class="w-full btn-primary text-white py-2 rounded-lg font-medium">Buy Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:5000';
+        
+        // Global State
+        let currentPage = 'home';
+        let apiKey = localStorage.getItem('agro_sensei_api_key') || '';
+        let apiProvider = localStorage.getItem('agro_sensei_api_provider') || 'openai';
+        let isDemoMode = localStorage.getItem('agro_sensei_demo_mode') === 'true';
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('home');
+            setupEventListeners();
+        });
+        
+        // Page Navigation
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            const page = document.getElementById(`${pageName}-page`);
+            if (page) {
+                page.classList.add('active');
+                currentPage = pageName;
+                
+                // Update active nav link
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('font-bold', 'text-green-700');
+                });
+            }
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Disease detection image upload
+            document.getElementById('disease-image-input').addEventListener('change', handleDiseaseImageUpload);
+            
+            // API key modal
+            document.getElementById('save-api-key').addEventListener('click', saveApiKey);
+            document.getElementById('demo-mode-btn').addEventListener('click', enableDemoMode);
+        }
+        
+        // Crop Recommendation
+        async function submitCropForm(event) {
+            event.preventDefault();
+            
+            const formData = {
+                N: parseFloat(document.getElementById('N').value),
+                P: parseFloat(document.getElementById('P').value),
+                K: parseFloat(document.getElementById('K').value),
+                temperature: parseFloat(document.getElementById('temperature').value),
+                humidity: parseFloat(document.getElementById('humidity').value),
+                ph: parseFloat(document.getElementById('ph').value),
+                rainfall: parseFloat(document.getElementById('rainfall').value)
+            };
+            
+            const submitBtn = document.getElementById('submit-crop-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analyzing...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/predict-crop`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayCropResults(data);
+                    showNotification('Crop recommendation generated successfully!', 'success');
+                } else {
+                    showNotification(data.error || 'Failed to get recommendation', 'error');
+                }
+            } catch (error) {
+                showNotification('Server error. Please make sure the backend is running.', 'error');
+                console.error('Error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-search mr-2"></i>Get Recommendation';
+            }
+        }
+        
+        function displayCropResults(data) {
+            const resultsDiv = document.getElementById('crop-results');
+            resultsDiv.classList.remove('hidden');
+            
+            const analysis = data.detailed_analysis;
+            const recommendations = data.top_recommendations;
+            
+            resultsDiv.innerHTML = `
+                <div class="crop-result-card rounded-2xl p-8 mb-6">
+                    <div class="bg-gradient-to-r from-green-600 to-green-800 text-white p-6 rounded-xl mb-6">
+                        <h2 class="text-3xl font-bold mb-2">Recommended Crop: ${data.predicted_crop.toUpperCase()}</h2>
+                        <div class="text-2xl font-bold">Confidence: ${data.confidence}%</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-blue-50 p-6 rounded-xl">
+                            <h3 class="font-bold text-lg mb-3"><i class="fas fa-calendar mr-2"></i>Season</h3>
+                            <p class="text-gray-700">${analysis.season}</p>
+                        </div>
+                        <div class="bg-green-50 p-6 rounded-xl">
+                            <h3 class="font-bold text-lg mb-3"><i class="fas fa-tint mr-2"></i>Water Requirement</h3>
+                            <p class="text-gray-700">${analysis.water_requirement}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-6 rounded-xl mb-6">
+                        <h3 class="font-bold text-lg mb-3"><i class="fas fa-flask mr-2"></i>Fertilizer Recommendation</h3>
+                        <p class="text-gray-700">${analysis.fertilizer_recommendation}</p>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="font-bold text-lg mb-3"><i class="fas fa-lightbulb mr-2"></i>Cultivation Tips</h3>
+                        <ul class="space-y-2">
+                            ${analysis.cultivation_tips.map(tip => `
+                                <li class="flex items-start text-gray-700">
+                                    <i class="fas fa-check-circle text-green-600 mr-2 mt-1"></i>
+                                    <span>${tip}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="font-bold text-lg mb-3"><i class="fas fa-chart-line mr-2"></i>Soil Analysis</h3>
+                        <div class="space-y-2">
+                            ${analysis.soil_analysis.map(msg => {
+                                const type = msg.includes('✅') ? 'alert-success' : 
+                                            msg.includes('⚠️') ? 'alert-warning' : 'alert-error';
+                                return `<div class="${type} p-4 rounded-lg border-l-4">${msg}</div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-6 rounded-xl">
+                        <h3 class="font-bold text-lg mb-3">Alternative Recommendations</h3>
+                        <div class="space-y-2">
+                            ${recommendations.slice(1).map(rec => `
+                                <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                                    <span class="font-medium">${rec.crop.toUpperCase()}</span>
+                                    <span class="text-green-600 font-bold">${rec.confidence}%</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <button onclick="resetCropForm()" class="mt-6 w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+                </div>
+            `;
+            
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function resetCropForm() {
+            document.getElementById('crop-form').reset();
+            document.getElementById('crop-results').classList.add('hidden');
+        }
+        
+        // Disease Detection
+        async function handleDiseaseImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const imageBase64 = e.target.result;
+                await analyzeDisease(imageBase64);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function analyzeDisease(imageBase64) {
+            if (!apiKey && !isDemoMode) {
+                showApiKeyModal();
+                return;
+            }
+            
+            document.getElementById('disease-upload-section').classList.add('hidden');
+            document.getElementById('disease-loading').classList.remove('hidden');
+            document.getElementById('disease-results').classList.add('hidden');
+            
+            try {
+                if (isDemoMode) {
+                    // Demo mode - generate mock response
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    const demoAnalysis = {
+                        disease: 'Late Blight',
+                        severity: 'Moderate',
+                        confidence: 87.5,
+                        description: 'Fungal disease affecting leaves and stems. Characterized by dark spots and wilting.',
+                        treatment: ['Apply copper-based fungicide', 'Remove infected plants', 'Improve air circulation'],
+                        prevention: ['Ensure proper spacing', 'Avoid overhead watering', 'Use resistant varieties']
+                    };
+                    displayDiseaseResults(demoAnalysis, imageBase64);
+                } else {
+                    const response = await fetch(`${API_BASE_URL}/api/analyze-disease`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image: imageBase64,
+                            api_key: apiKey,
+                            provider: apiProvider
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        displayDiseaseResults(data.analysis, imageBase64);
+                    } else {
+                        showNotification(data.error || 'Failed to analyze image', 'error');
+                        document.getElementById('disease-upload-section').classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                showNotification('Server error. Please make sure the backend is running.', 'error');
+                document.getElementById('disease-upload-section').classList.remove('hidden');
+            } finally {
+                document.getElementById('disease-loading').classList.add('hidden');
+            }
+        }
+        
+        function displayDiseaseResults(analysis, imageBase64) {
+            const resultsDiv = document.getElementById('disease-results');
+            resultsDiv.classList.remove('hidden');
+            
+            const severityColor = analysis.severity === 'High' ? 'red' : 
+                                 analysis.severity === 'Moderate' ? 'yellow' : 'green';
+            
+            resultsDiv.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <div class="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6 rounded-xl mb-6">
+                        <h2 class="text-3xl font-bold mb-2">Diagnosis Complete</h2>
+                        <p class="text-green-100">Confidence: ${analysis.confidence}%</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="${imageBase64}" alt="Analyzed crop" class="w-full rounded-xl shadow-lg mb-4">
+                        </div>
+                        <div>
+                            <div class="bg-gray-50 p-6 rounded-xl">
+                                <h3 class="font-bold text-xl mb-2">${analysis.disease || 'Healthy'}</h3>
+                                <div class="text-lg mb-2">Severity: <span class="font-bold" style="color: ${severityColor};">${analysis.severity}</span></div>
+                                <p class="text-gray-700">${analysis.description}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-green-50 p-6 rounded-xl">
+                            <h3 class="font-bold text-lg mb-3"><i class="fas fa-pills mr-2"></i>Treatment</h3>
+                            <ul class="space-y-2">
+                                ${analysis.treatment.map(t => `<li class="flex items-start"><i class="fas fa-check text-green-600 mr-2 mt-1"></i><span>${t}</span></li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="bg-blue-50 p-6 rounded-xl">
+                            <h3 class="font-bold text-lg mb-3"><i class="fas fa-shield-alt mr-2"></i>Prevention</h3>
+                            <ul class="space-y-2">
+                                ${analysis.prevention.map(p => `<li class="flex items-start"><i class="fas fa-check text-blue-600 mr-2 mt-1"></i><span>${p}</span></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <button onclick="resetDiseaseForm()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300">
+                        <i class="fas fa-redo mr-2"></i>New Analysis
+                    </button>
+                </div>
+            `;
+        }
+        
+        function resetDiseaseForm() {
+            document.getElementById('disease-image-input').value = '';
+            document.getElementById('disease-upload-section').classList.remove('hidden');
+            document.getElementById('disease-results').classList.add('hidden');
+        }
+        
+        async function runDemoAnalysis() {
+            isDemoMode = true;
+            const demoImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzRhNWQ2OCIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+U2FtcGxlIFBsYW50PC90ZXh0Pjwvc3ZnPg==';
+            await analyzeDisease(demoImage);
+        }
+        
+        // API Key Management
+        function showApiKeyModal() {
+            document.getElementById('api-key-modal').classList.add('show');
+        }
+        
+        function hideApiKeyModal() {
+            document.getElementById('api-key-modal').classList.remove('show');
+        }
+        
+        function saveApiKey() {
+            const key = document.getElementById('api-key-input').value.trim();
+            const provider = document.getElementById('api-provider').value;
+            
+            if (!key) {
+                showNotification('Please enter an API key', 'error');
+                return;
+            }
+            
+            apiKey = key;
+            apiProvider = provider;
+            isDemoMode = false;
+            
+            localStorage.setItem('agro_sensei_api_key', key);
+            localStorage.setItem('agro_sensei_api_provider', provider);
+            localStorage.setItem('agro_sensei_demo_mode', 'false');
+            
+            hideApiKeyModal();
+            showNotification('API key saved successfully!', 'success');
+        }
+        
+        function enableDemoMode() {
+            isDemoMode = true;
+            localStorage.setItem('agro_sensei_demo_mode', 'true');
+            hideApiKeyModal();
+            showNotification('Demo mode activated', 'info');
+        }
+        
+        // Community
+        function createPost() {
+            const content = document.getElementById('post-content').value.trim();
+            if (!content) {
+                showNotification('Please enter post content', 'warning');
+                return;
+            }
+            
+            showNotification('Post created successfully! (Feature coming soon)', 'success');
+            document.getElementById('post-content').value = '';
+        }
+        
+        // Marketplace
+        function filterProducts(category) {
+            const products = document.querySelectorAll('.product-card');
+            const buttons = document.querySelectorAll('.category-btn');
+            
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-green-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.classList.add('bg-green-600', 'text-white');
+            
+            products.forEach(product => {
+                if (category === 'all' || product.dataset.category === category) {
+                    product.style.display = 'block';
+                } else {
+                    product.style.display = 'none';
+                }
+            });
+        }
+        
+        // Notifications
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+        
+        // Mobile Menu
+        function toggleMobileMenu() {
+            // Implementation for mobile menu
+            showNotification('Mobile menu coming soon', 'info');
+        }
+    </script>
+</body>
+</html>
+

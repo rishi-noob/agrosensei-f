@@ -1,0 +1,270 @@
+{
+  "crops": [
+    "apple",
+    "banana",
+    "blackgram",
+    "chickpea",
+    "coconut",
+    "coffee",
+    "cotton",
+    "grapes",
+    "jute",
+    "kidneybeans",
+    "lentil",
+    "maize",
+    "mango",
+    "mothbeans",
+    "mungbean",
+    "orange",
+    "papaya",
+    "pigeonpeas",
+    "pomegranate",
+    "rice",
+    "watermelon"
+  ],
+  "num_crops": 21,
+  "features": [
+    "N",
+    "P",
+    "K",
+    "temperature",
+    "humidity",
+    "ph",
+    "rainfall"
+  ],
+  "feature_ranges": {
+    "N": {
+      "min": 0.0,
+      "max": 140.0,
+      "mean": 48.18190476190476,
+      "std": 36.01674027423078
+    },
+    "P": {
+      "min": 5.0,
+      "max": 145.0,
+      "mean": 55.06,
+      "std": 32.77290186591234
+    },
+    "K": {
+      "min": 5.0,
+      "max": 205.0,
+      "mean": 48.05714285714286,
+      "std": 51.833864148237524
+    },
+    "temperature": {
+      "min": 8.825674745,
+      "max": 43.67549305,
+      "mean": 25.471157094435714,
+      "std": 5.134670861124224
+    },
+    "humidity": {
+      "min": 14.25803981,
+      "max": 99.98187601,
+      "mean": 70.4883971824,
+      "std": 22.303929468889017
+    },
+    "ph": {
+      "min": 3.504752314,
+      "max": 9.93509073,
+      "mean": 6.474750284945238,
+      "std": 0.7901749332862046
+    },
+    "rainfall": {
+      "min": 30.92014047,
+      "max": 298.5601175,
+      "mean": 107.21478414670952,
+      "std": 53.42519105603392
+    }
+  },
+  "crop_metadata": {
+    "apple": {
+      "avg_N": 20.8,
+      "avg_P": 134.22,
+      "avg_K": 199.89,
+      "avg_temperature": 22.6309424132,
+      "avg_humidity": 92.33338287560002,
+      "avg_ph": 5.929662931809999,
+      "avg_rainfall": 112.65477927500002
+    },
+    "banana": {
+      "avg_N": 100.23,
+      "avg_P": 82.01,
+      "avg_K": 50.05,
+      "avg_temperature": 27.3767983057,
+      "avg_humidity": 80.3581225811,
+      "avg_ph": 5.98389318024,
+      "avg_rainfall": 104.62698040009998
+    },
+    "blackgram": {
+      "avg_N": 40.02,
+      "avg_P": 67.47,
+      "avg_K": 19.24,
+      "avg_temperature": 29.9733396789,
+      "avg_humidity": 65.1184255887,
+      "avg_ph": 7.133951629480002,
+      "avg_rainfall": 67.88415118319999
+    },
+    "chickpea": {
+      "avg_N": 40.09,
+      "avg_P": 67.79,
+      "avg_K": 79.92,
+      "avg_temperature": 18.8728467519,
+      "avg_humidity": 16.8604394237,
+      "avg_ph": 7.33695662374,
+      "avg_rainfall": 80.0589772605
+    },
+    "coconut": {
+      "avg_N": 21.98,
+      "avg_P": 16.93,
+      "avg_K": 30.59,
+      "avg_temperature": 27.409892172299998,
+      "avg_humidity": 94.84427180609998,
+      "avg_ph": 5.97656212619,
+      "avg_rainfall": 175.68664580399997
+    },
+    "coffee": {
+      "avg_N": 101.2,
+      "avg_P": 28.74,
+      "avg_K": 29.94,
+      "avg_temperature": 25.5404768193,
+      "avg_humidity": 58.86984630029999,
+      "avg_ph": 6.790308274570001,
+      "avg_rainfall": 158.066294882
+    },
+    "cotton": {
+      "avg_N": 117.77,
+      "avg_P": 46.24,
+      "avg_K": 19.56,
+      "avg_temperature": 23.988957895200006,
+      "avg_humidity": 79.8434742538,
+      "avg_ph": 6.912675495780002,
+      "avg_rainfall": 80.3980431193
+    },
+    "grapes": {
+      "avg_N": 23.18,
+      "avg_P": 132.53,
+      "avg_K": 200.11,
+      "avg_temperature": 23.849575120049998,
+      "avg_humidity": 81.87522752119999,
+      "avg_ph": 6.025936681099999,
+      "avg_rainfall": 69.611828886
+    },
+    "jute": {
+      "avg_N": 78.4,
+      "avg_P": 46.86,
+      "avg_K": 39.99,
+      "avg_temperature": 24.958375826499996,
+      "avg_humidity": 79.6398642063,
+      "avg_ph": 6.7327775681699995,
+      "avg_rainfall": 174.792797536
+    },
+    "kidneybeans": {
+      "avg_N": 20.75,
+      "avg_P": 67.54,
+      "avg_K": 20.05,
+      "avg_temperature": 20.1150846851,
+      "avg_humidity": 21.605356729499995,
+      "avg_ph": 5.749410585870001,
+      "avg_rainfall": 105.91977754210002
+    },
+    "lentil": {
+      "avg_N": 18.77,
+      "avg_P": 68.36,
+      "avg_K": 19.41,
+      "avg_temperature": 24.509052402600002,
+      "avg_humidity": 64.80478467849998,
+      "avg_ph": 6.9279315716099985,
+      "avg_rainfall": 45.680454204
+    },
+    "maize": {
+      "avg_N": 77.76,
+      "avg_P": 48.44,
+      "avg_K": 19.79,
+      "avg_temperature": 22.389203910199996,
+      "avg_humidity": 65.0922494467,
+      "avg_ph": 6.245189722399999,
+      "avg_rainfall": 84.76698766300002
+    },
+    "mango": {
+      "avg_N": 20.07,
+      "avg_P": 27.18,
+      "avg_K": 29.92,
+      "avg_temperature": 31.2087701513,
+      "avg_humidity": 50.1565726953,
+      "avg_ph": 5.766372799659999,
+      "avg_rainfall": 94.70451504479999
+    },
+    "mothbeans": {
+      "avg_N": 21.44,
+      "avg_P": 48.01,
+      "avg_K": 20.23,
+      "avg_temperature": 28.194920484199994,
+      "avg_humidity": 53.16041802789999,
+      "avg_ph": 6.83117408269,
+      "avg_rainfall": 51.198487045700006
+    },
+    "mungbean": {
+      "avg_N": 20.99,
+      "avg_P": 47.28,
+      "avg_K": 19.87,
+      "avg_temperature": 28.5257747353,
+      "avg_humidity": 85.49997454300001,
+      "avg_ph": 6.72395694037,
+      "avg_rainfall": 48.403600902899996
+    },
+    "orange": {
+      "avg_N": 19.58,
+      "avg_P": 16.55,
+      "avg_K": 10.01,
+      "avg_temperature": 22.7657254967,
+      "avg_humidity": 92.17020876340001,
+      "avg_ph": 7.01695745276,
+      "avg_rainfall": 110.47496871999999
+    },
+    "papaya": {
+      "avg_N": 49.88,
+      "avg_P": 59.05,
+      "avg_K": 50.04,
+      "avg_temperature": 33.7238587388,
+      "avg_humidity": 92.40338768259998,
+      "avg_ph": 6.74144237274,
+      "avg_rainfall": 142.6278388629
+    },
+    "pigeonpeas": {
+      "avg_N": 20.73,
+      "avg_P": 67.73,
+      "avg_K": 20.29,
+      "avg_temperature": 27.741762225899997,
+      "avg_humidity": 48.0616330847,
+      "avg_ph": 5.794174879789999,
+      "avg_rainfall": 149.4575638135
+    },
+    "pomegranate": {
+      "avg_N": 18.87,
+      "avg_P": 18.75,
+      "avg_K": 40.21,
+      "avg_temperature": 21.837841721999997,
+      "avg_humidity": 90.12550378950002,
+      "avg_ph": 6.4291718411700005,
+      "avg_rainfall": 107.52844239699999
+    },
+    "rice": {
+      "avg_N": 79.89,
+      "avg_P": 47.58,
+      "avg_K": 39.87,
+      "avg_temperature": 23.6893322105,
+      "avg_humidity": 82.27282153889999,
+      "avg_ph": 6.425470922139999,
+      "avg_rainfall": 236.18111359399998
+    },
+    "watermelon": {
+      "avg_N": 99.42,
+      "avg_P": 17.0,
+      "avg_K": 50.22,
+      "avg_temperature": 25.591767237499997,
+      "avg_humidity": 85.1603752936,
+      "avg_ph": 6.495778301569998,
+      "avg_rainfall": 50.7862189449
+    }
+  }
+}

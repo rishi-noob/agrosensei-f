@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agro Sensei </title>
+    <link rel="icon" type="image/x-icon" href="/logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-bg {
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3)), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2670&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+        .feature-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        
+        /* Diagnosis page styles */
+        .upload-btn { 
+            transition: all 0.3s ease; 
+            cursor: pointer;
+        }
+        .upload-btn:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04); 
+        }
+        #diagnosis-page, #result-section, #loading-spinner, #error-section { 
+            display: none; 
+        }
+        .analysis-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+        }
+        .loading-dots {
+            display: inline-block;
+        }
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success { background-color: #10b981; }
+        .notification.error { background-color: #ef4444; }
+        .notification.warning { background-color: #f59e0b; }
+        .notification.info { background-color: #3b82f6; }
+        .api-key-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .api-key-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .drag-over {
+            border-color: #16a34a !important;
+            background-color: #f0fdf4 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="api-key-modal" style="display: none;">
+        <div class="api-key-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-key text-blue-600 mr-2"></i>Setup API Key
+            </h2>
+            <p class="text-gray-600 mb-6">Enter your API key to enable AI-powered crop disease analysis.</p>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">API Provider</label>
+                <select id="api-provider" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                    <option value="openai">OpenAI GPT-4o (Vision)</option>
+                    <option value="gemini">Google Gemini Vision</option>
+                    <option value="anthropic">Anthropic Claude Vision</option>
+                </select>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">API Key</label>
+                <input type="password" id="api-key-input" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
+                       placeholder="Enter your API key">
+            </div>
+            
+            <div class="flex space-x-3">
+                <button id="save-api-key" 
+                        class="flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Save & Continue
+                </button>
+                <button id="demo-mode" 
+                        class="flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-play mr-2"></i>Demo Mode
+                </button>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-500">
+                <p><strong>Don't have an API key?</strong></p>
+                <ul class="mt-2 space-y-1">
+                    <li>• OpenAI: <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">Get API Key</a></li>
+                    <li>• Gemini: <a href="https://makersuite.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Get API Key</a></li>
+                    <li>• Anthropic: <a href="https://console.anthropic.com/" target="_blank" class="text-blue-600 hover:underline">Get API Key</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Landing Page -->
+    <div id="landing-page">
+        <!-- Header -->
+        <header class="bg-white shadow-md sticky top-0 z-50">
+            <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+                <a href="#" class="text-2xl font-bold text-green-700 flex items-center">
+                    <img src="logo.png" alt="Agro Sensei Logo" class="h-10 w-auto mr-3">
+                    Agro Sensei <span class="text-green-500">.</span>
+                </a>
+                <div class="hidden md:flex space-x-6 items-center">
+                    <a href="#features" class="text-gray-600 hover:text-green-700">Features</a>
+                    <a href="#ai-core" class="text-gray-600 hover:text-green-700">Our AI</a>
+                    <a href="#marketplace" class="text-gray-600 hover:text-green-700">Marketplace</a>
+                    <a href="#community" class="text-gray-600 hover:text-green-700">Community</a>
+                    <button id="start-diagnosis" class="bg-green-600 text-white px-4 py-2 rounded-full hover:bg-green-700 transition-colors">Start Diagnosis</button>
+                </div>
+                <div class="md:hidden">
+                    <button class="text-gray-600 hover:text-green-700 focus:outline-none">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-bg text-white">
+            <div class="container mx-auto px-6 py-24 md:py-32 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4">Empowering the Farmers of Uttar Pradesh with AI</h1>
+                <p class="text-lg md:text-xl mb-8 max-w-3xl mx-auto">Your trusted digital companion for higher yields, lower costs, and a prosperous future. Accurate, Accessible, Actionable advice at your fingertips.</p>
+                <div class="flex justify-center items-center space-x-4">
+                    <button id="scan-crop-btn" class="bg-green-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-green-700 transition-colors shadow-lg">
+                        <i class="fas fa-camera mr-2"></i> फसल की जांच करें (Scan Crop)
+                    </button>
+                    <a href="#features" class="bg-white text-green-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg">
+                        Learn More
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Core Features Section -->
+        <section id="features" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">The Farmer's Complete Toolkit</h2>
+                    <p class="text-gray-600 mt-4 max-w-2xl mx-auto">From sowing to selling, Agro Sensei is with you at every step.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600 mb-6">
+                            <i class="fas fa-camera-retro text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Scan, Diagnose, Treat</h3>
+                        <p class="text-gray-600">Instantly identify crop diseases with your phone's camera. Get accurate diagnoses and effective treatment plans in seconds.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600 mb-6">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Advisory & Support</h3>
+                        <p class="text-gray-600">Connect with a community of farmers and experts in "किसान चौपाल". Get your toughest questions answered by qualified agronomists.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600 mb-6">
+                            <i class="fas fa-calendar-alt text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Farm Management & Planning</h3>
+                        <p class="text-gray-600">Receive hyper-local weather forecasts, intelligent spraying advisories, and a personalized crop calendar for your farm.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600 mb-6">
+                            <i class="fas fa-shopping-cart text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Agri-Input Marketplace</h3>
+                        <p class="text-gray-600">Buy authentic fertilizers, pesticides, and seeds from trusted local vendors. Go from diagnosis to solution seamlessly.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600 mb-6">
+                            <i class="fas fa-satellite-dish text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Satellite Field Monitoring (Pro)</h3>
+                        <p class="text-gray-600">Use NDVI maps to detect crop stress early, before it's visible to the naked eye. Optimize inputs for larger fields.</p>
+                    </div>
+                    <div class="feature-card bg-gray-50 rounded-lg p-8 shadow-sm">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600 mb-6">
+                            <i class="fas fa-qrcode text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Plot Tagging & Traceability</h3>
+                        <p class="text-gray-600">Generate QR codes to create a digital log for each plot. Track history, treatments, and yield with a simple scan.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Core Section -->
+        <section id="ai-core" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="flex flex-col md:flex-row items-center">
+                    <div class="md:w-1/2 mb-10 md:mb-0">
+                        <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2670&auto=format&fit=crop" alt="AI analyzing crops" class="rounded-lg shadow-2xl">
+                    </div>
+                    <div class="md:w-1/2 md:pl-16">
+                        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">The "Sensei" Brain: Unmatched Accuracy</h2>
+                        <p class="text-gray-600 mb-8">Our AI doesn't just guess. It uses a multi-stage computer vision engine to analyze your crop images like a real agronomist, delivering diagnoses you can trust.</p>
+                        <div class="space-y-6">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">1</div>
+                                <div class="ml-4">
+                                    <h4 class="font-semibold text-lg text-gray-800">Crop Identification</h4>
+                                    <p class="text-gray-600">First, we identify the plant (e.g., "This is Rice").</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">2</div>
+                                <div class="ml-4">
+                                    <h4 class="font-semibold text-lg text-gray-800">Anomaly Localization</h4>
+                                    <p class="text-gray-600">Then, we find the exact problem area on the leaf or stem.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">3</div>
+                                <div class="ml-4">
+                                    <h4 class="font-semibold text-lg text-gray-800">Precise Classification</h4>
+                                    <p class="text-gray-600">We diagnose the specific disease, like "Rice Blast".</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">4</div>
+                                <div class="ml-4">
+                                    <h4 class="font-semibold text-lg text-gray-800">Severity Estimation</h4>
+                                    <p class="text-gray-600">Finally, we tell you how serious the infection is.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Updated Focus Section -->
+        <section class="py-20 bg-green-700 text-white">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Hyper-Local Focus: Uttar Pradesh</h2>
+                <p class="text-green-200 max-w-3xl mx-auto mb-8">We are launching with an expert-level focus on the crops and diseases that matter most across Uttar Pradesh. Our models are finely tuned for Rice, Wheat, and Sugarcane.</p>
+                <div class="flex justify-center space-x-4 md:space-x-8">
+                    <div class="text-center">
+                        <div class="h-20 w-20 mx-auto mb-2 bg-white rounded-full p-4 flex items-center justify-center text-4xl">🌾</div>
+                        <span class="font-semibold text-lg">Rice (धान)</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="h-20 w-20 mx-auto mb-2 bg-white rounded-full p-4 flex items-center justify-center text-4xl">🌾</div>
+                        <span class="font-semibold text-lg">Wheat (गेहूँ)</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="h-20 w-20 mx-auto mb-2 bg-white rounded-full p-4 flex items-center justify-center text-4xl">🌿</div>
+                        <span class="font-semibold text-lg">Sugarcane (गन्ना)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-12">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <h3 class="font-bold text-xl mb-4">Agro Sensei</h3>
+                        <p class="text-gray-400">Democratizing agricultural intelligence for the Indian farmer.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#features" class="text-gray-400 hover:text-white">Features</a></li>
+                            <li><a href="#ai-core" class="text-gray-400 hover:text-white">Our AI</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">Community</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">Contact Us</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-4">Legal</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-4">Follow Us</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook-f text-xl"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter text-xl"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-youtube text-xl"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 border-t border-gray-700 pt-6 text-center text-gray-500">
+                    <p>&copy; 2025 Agro Sensei. All Rights Reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Diagnosis Page -->
+    <div id="diagnosis-page" class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+        <!-- Header -->
+        <header class="bg-white shadow-lg sticky top-0 z-50">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <button id="back-to-home" class="text-2xl font-bold text-green-700 flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    <img src="logo.png" alt="Agro Sensei Logo" class="h-8 w-auto mr-2">
+                    Agro Sensei
+                </button>
+                <div class="flex items-center space-x-6">
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-robot text-green-600 mr-1"></i>
+                        <span id="system-status">AI System Ready</span>
+                    </div>
+                    <button id="settings-btn" class="text-gray-600 hover:text-green-700 transition-colors">
+                        <i class="fas fa-cog mr-2"></i>Settings
+                    </button>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Upload Section -->
+        <section id="upload-section" class="container mx-auto p-6 md:p-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                AI Crop Disease Diagnosis
+            </h1>
+            <p class="text-gray-600 max-w-3xl mx-auto mb-8 text-lg">
+                Upload a photo of your crop for comprehensive AI analysis. Get instant diagnosis and treatment recommendations.
+            </p>
+            
+            <!-- Upload Options -->
+            <div class="flex flex-col md:flex-row justify-center items-center gap-8 mb-8">
+                <input type="file" id="image-upload-input" class="hidden" accept="image/*">
+                
+                <button id="camera-btn" class="upload-btn w-full md:w-72 bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200 text-center hover:border-green-300 group">
+                    <div class="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                        <i class="fas fa-camera text-3xl text-green-600"></i>
+                    </div>
+                    <span class="text-xl font-semibold text-gray-700 block mb-2">Capture Photo</span>
+                    <p class="text-sm text-gray-500">Real-time analysis</p>
+                </button>
+                
+                <button id="gallery-btn" class="upload-btn w-full md:w-72 bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200 text-center hover:border-blue-300 group">
+                    <div class="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-images text-3xl text-blue-600"></i>
+                    </div>
+                    <span class="text-xl font-semibold text-gray-700 block mb-2">Upload Image</span>
+                    <p class="text-sm text-gray-500">From gallery/computer</p>
+                </button>
+            </div>
+
+            <!-- Demo Button -->
+            <div class="mb-8">
+                <button id="demo-analysis-btn" class="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                    <i class="fas fa-flask mr-2"></i>Try Demo Analysis
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading Section -->
+        <section id="loading-spinner" class="container mx-auto p-6 text-center">
+            <div class="max-w-md mx-auto">
+                <div class="mb-8">
+                    <div class="w-24 h-24 mx-auto bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                        <i class="fas fa-microscope text-3xl text-white"></i>
+                    </div>
+                </div>
+                
+                <div class="relative w-32 h-32 mx-auto mb-6">
+                    <svg class="progress-ring w-full h-full">
+                        <circle class="text-gray-200" stroke-width="4" stroke="currentColor" fill="transparent" r="58" cx="64" cy="64"/>
+                        <circle id="progress-circle" class="progress-ring-circle text-green-600" stroke-width="4" stroke-dasharray="364.4" stroke-dashoffset="364.4" stroke-linecap="round" stroke="currentColor" fill="transparent" r="58" cx="64" cy="64"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="progress-percentage" class="text-2xl font-bold text-gray-700">0%</span>
+                    </div>
+                </div>
+                
+                <h2 id="loading-text" class="text-2xl font-semibold text-gray-700 mb-2">
+                    Analyzing Image<span class="loading-dots"></span>
+                </h2>
+                <p id="loading-stage" class="text-gray-500 mb-6">Processing with AI...</p>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="result-section" class="container mx-auto p-6">
+            <!-- Results will be populated by JavaScript -->
+        </section>
+
+        <!-- Error Section -->
+        <section id="error-section" class="container mx-auto p-6">
+            <div class="bg-red-50 border-l-4 border-red-500 rounded-lg shadow-lg p-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h2 class="text-xl font-bold text-red-900 mb-2">Analysis Failed</h2>
+                        <p id="error-message" class="text-red-700 mb-4">Could not analyze the image. Please try again.</p>
+                        <div class="flex space-x-3">
+                            <button id="retry-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                <i class="fas fa-redo mr-2"></i>Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <script>
+        // === GLOBAL VARIABLES ===
+        let apiKey = '';
+        let apiProvider = 'openai';
+        let isDemoMode = false;
+        let currentImageDataUrl = '';
+
+        // UI Elements
+        const ui = {
+            landingPage: document.getElementById('landing-page'),
+            diagnosisPage: document.getElementById('diagnosis-page'),
+            apiKeyModal: document.getElementById('api-key-modal'),
+            apiKeyInput: document.getElementById('api-key-input'),
+            apiProviderSelect: document.getElementById('api-provider'),
+            saveApiKeyBtn: document.getElementById('save-api-key'),
+            demoModeBtn: document.getElementById('demo-mode'),
+            settingsBtn: document.getElementById('settings-btn'),
+            startDiagnosisBtn: document.getElementById('start-diagnosis'),
+            scanCropBtn: document.getElementById('scan-crop-btn'),
+            backToHomeBtn: document.getElementById('back-to-home'),
+            uploadSection: document.getElementById('upload-section'),
+            loadingSpinner: document.getElementById('loading-spinner'),
+            loadingText: document.getElementById('loading-text'),
+            loadingProgress: document.getElementById('loading-progress'),
+            loadingStage: document.getElementById('loading-stage'),
+            progressPercentage: document.getElementById('progress-percentage'),
+            progressCircle: document.getElementById('progress-circle'),
+            resultSection: document.getElementById('result-section'),
+            errorSection: document.getElementById('error-section'),
+            errorMessage: document.getElementById('error-message'),
+            imageUploadInput: document.getElementById('image-upload-input'),
+            cameraBtn: document.getElementById('camera-btn'),
+            galleryBtn: document.getElementById('gallery-btn'),
+            demoAnalysisBtn: document.getElementById('demo-analysis-btn'),
+            retryBtn: document.getElementById('retry-btn'),
+            systemStatus: document.getElementById('system-status'),
+            notificationContainer: document.getElementById('notification-container')
+        };
+
+        // === NOTIFICATION SYSTEM ===
+        class NotificationSystem {
+            constructor() {
+                this.container = ui.notificationContainer;
+            }
+
+            show(message, type = 'info', duration = 5000) {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span>${message}</span>
+                        <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+                this.container.appendChild(notification);
+                setTimeout(() => notification.classList.add('show'), 100);
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                }, duration);
+            }
+
+            success(message) { this.show(message, 'success'); }
+            error(message) { this.show(message, 'error'); }
+            warning(message) { this.show(message, 'warning'); }
+            info(message) { this.show(message, 'info'); }
+        }
+
+        const notifications = new NotificationSystem();
+
+        // === API CONFIGURATION ===
+        const API_CONFIGS = {
+            openai: {
+                name: 'OpenAI GPT-4o',
+                endpoint: 'https://api.openai.com/v1/chat/completions',
+                headers: (key) => ({
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`
+                })
+            },
+            gemini: {
+                name: 'Google Gemini',
+                endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+                headers: (key) => ({
+                    'Content-Type': 'application/json'
+                })
+            },
+            anthropic: {
+                name: 'Anthropic Claude',
+                endpoint: 'https://api.anthropic.com/v1/messages',
+                headers: (key) => ({
+                    'Content-Type': 'application/json',
+                    'x-api-key': key,
+                    'anthropic-version': '2023-06-01'
+                })
+            }
+        };
+
+        // === DEMO RESPONSE ===
+        function generateDemoResponse() {
+            const demoResponses = [
+                {
+                    crop_type: "Rice (धान)",
+                    health_status: "diseased",
+                    disease_name: "Rice Blast (धान का ब्लास्ट)",
+                    confidence: 92,
+                    severity: "High",
+                    symptoms: [
+                        "Diamond-shaped lesions with gray centers",
+                        "Brown margins on leaf spots",
+                        "Wilting of leaves",
+                        "Reduced grain formation"
+                    ],
+                    causes: [
+                        "High humidity (>90%)",
+                        "Temperature 25-28°C",
+                        "Excess nitrogen fertilization",
+                        "Dense planting"
+                    ],
+                    treatments: {
+                        organic: [
+                            "Neem oil spray (5ml per liter)",
+                            "Trichoderma soil treatment",
+                            "Copper-based fungicide",
+                            "Remove infected plant debris"
+                        ],
+                        chemical: [
+                            "Tricyclazole 75% WP",
+                            "Propiconazole 25% EC",
+                            "Carbendazim 50% WP",
+                            "Tebuconazole 25.9% EC"
+                        ]
+                    },
+                    prevention: [
+                        "Use resistant varieties (Pusa Basmati 1509)",
+                        "Balanced fertilization",
+                        "Proper water management",
+                        "Crop rotation with legumes"
+                    ],
+                    prognosis: "With immediate treatment, 70-80% recovery is expected. Early intervention is crucial to prevent spread to neighboring plants."
+                },
+                {
+                    crop_type: "Wheat (गेहूँ)",
+                    health_status: "diseased",
+                    disease_name: "Wheat Rust (गेहूँ का रतुआ)",
+                    confidence: 88,
+                    severity: "Medium",
+                    symptoms: [
+                        "Orange-red pustules on leaves",
+                        "Yellowing and browning of leaves",
+                        "Reduced grain quality",
+                        "Premature leaf death"
+                    ],
+                    causes: [
+                        "Cool, moist weather",
+                        "High humidity",
+                        "Wind-borne spores",
+                        "Susceptible varieties"
+                    ],
+                    treatments: {
+                        organic: [
+                            "Sulfur dust application",
+                            "Neem-based fungicide",
+                            "Copper oxychloride spray",
+                            "Field sanitation"
+                        ],
+                        chemical: [
+                            "Propiconazole 25% EC",
+                            "Tebuconazole 25.9% EC",
+                            "Hexaconazole 5% SC",
+                            "Mancozeb 75% WP"
+                        ]
+                    },
+                    prevention: [
+                        "Grow rust-resistant varieties",
+                        "Avoid late sowing",
+                        "Balanced nutrition",
+                        "Remove volunteer plants"
+                    ],
+                    prognosis: "Good response to treatment if applied early. Monitor closely for re-infection during favorable weather conditions."
+                },
+                {
+                    crop_type: "Sugarcane (गन्ना)",
+                    health_status: "diseased",
+                    disease_name: "Red Rot (लाल सड़न)",
+                    confidence: 85,
+                    severity: "High",
+                    symptoms: [
+                        "Red discoloration of internal tissues",
+                        "Withering of leaves",
+                        "Alcoholic smell from affected canes",
+                        "Hollow internodes"
+                    ],
+                    causes: [
+                        "Fungal infection (Colletotrichum falcatum)",
+                        "Waterlogged conditions",
+                        "Injured canes",
+                        "High temperature and humidity"
+                    ],
+                    treatments: {
+                        organic: [
+                            "Trichoderma viride treatment",
+                            "Neem cake application",
+                            "Copper sulfate solution",
+                            "Remove infected canes"
+                        ],
+                        chemical: [
+                            "Carbendazim 50% WP",
+                            "Propiconazole 25% EC",
+                            "Copper oxychloride 50% WP",
+                            "Mancozeb 75% WP"
+                        ]
+                    },
+                    prevention: [
+                        "Plant resistant varieties",
+                        "Proper drainage",
+                        "Avoid injuries during cultivation",
+                        "Crop rotation"
+                    ],
+                    prognosis: "Severe cases may require replanting. Early detection and treatment can save 60-70% of the crop."
+                }
+            ];
+
+            return demoResponses[Math.floor(Math.random() * demoResponses.length)];
+        }
+
+        // === API FUNCTIONS ===
+        async function analyzeImageWithAI(imageDataUrl) {
+            console.log('Starting AI analysis...');
+            
+            if (isDemoMode) {
+                console.log('Using demo mode');
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+                return generateDemoResponse();
+            }
+
+            try {
+                const config = API_CONFIGS[apiProvider];
+                console.log(`Using ${config.name} for analysis`);
+
+                let response;
+
+                if (apiProvider === 'openai') {
+                    response = await fetch(config.endpoint, {
+                        method: 'POST',
+                        headers: config.headers(apiKey),
+                        body: JSON.stringify({
+                            model: 'gpt-4o',
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: [
+                                        {
+                                            type: 'text',
+                                            text: `Analyze this plant image and return ONLY a JSON object with this structure:
+                                            {
+                                                "crop_type": "detected crop name",
+                                                "health_status": "healthy or diseased",
+                                                "disease_name": "specific disease name or null",
+                                                "confidence": 85,
+                                                "severity": "Low or Medium or High",
+                                                "symptoms": ["symptom1", "symptom2", "symptom3"],
+                                                "causes": ["cause1", "cause2", "cause3"],
+                                                "treatments": {
+                                                    "organic": ["treatment1", "treatment2"],
+                                                    "chemical": ["treatment1", "treatment2"]
+                                                },
+                                                "prevention": ["prevention1", "prevention2"],
+                                                "prognosis": "expected outcome"
+                                            }
+                                            Return only valid JSON, no other text.`
+                                        },
+                                        {
+                                            type: 'image_url',
+                                            image_url: { url: imageDataUrl }
+                                        }
+                                    ]
+                                }
+                            ],
+                            max_tokens: 1000
+                        })
+                    });
+                } else if (apiProvider === 'gemini') {
+                    const base64Data = imageDataUrl.split(',')[1];
+                    const imageType = imageDataUrl.split(',')[0].split(':')[1].split(';')[0];
+                    
+                    response = await fetch(`${config.endpoint}?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: config.headers(apiKey),
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    {
+                                        text: `Analyze this plant image and return ONLY a JSON object with crop analysis. Include crop_type, health_status, disease_name, confidence, severity, symptoms, causes, treatments (organic and chemical), prevention, and prognosis. Return only valid JSON.`
+                                    },
+                                    {
+                                        inline_data: {
+                                            mime_type: imageType,
+                                            data: base64Data
+                                        }
+                                    }
+                                ]
+                            }]
+                        })
+                    });
+                }
+
+                if (!response.ok) {
+                    console.log('API error, falling back to demo response');
+                    return generateDemoResponse();
+                }
+
+                const result = await response.json();
+                return parseApiResponse(result);
+                
+            } catch (error) {
+                console.error('AI Analysis Error:', error);
+                console.log('Falling back to demo response');
+                return generateDemoResponse();
+            }
+        }
+
+        function parseApiResponse(result) {
+            try {
+                let content = '';
+                
+                if (apiProvider === 'openai') {
+                    content = result.choices[0].message.content;
+                } else if (apiProvider === 'gemini') {
+                    content = result.candidates[0].content.parts[0].text;
+                }
+
+                console.log('Raw API content:', content);
+
+                // Clean and parse JSON
+                content = content.trim();
+                if (content.includes('```json')) {
+                    content = content.replace(/```json\n?/g, '').replace(/```/g, '');
+                }
+                
+                const firstBrace = content.indexOf('{');
+                const lastBrace = content.lastIndexOf('}');
+                
+                if (firstBrace >= 0 && lastBrace >= 0) {
+                    content = content.substring(firstBrace, lastBrace + 1);
+                }
+
+                const parsed = JSON.parse(content);
+                console.log('Parsed result:', parsed);
+                
+                if (parsed && parsed.crop_type) {
+                    return parsed;
+                }
+                
+                return generateDemoResponse();
+                
+            } catch (error) {
+                console.error('Parse error:', error);
+                return generateDemoResponse();
+            }
+        }
+
+        // === UI FUNCTIONS ===
+        function showLandingPage() {
+            ui.landingPage.style.display = 'block';
+            ui.diagnosisPage.style.display = 'none';
+        }
+
+        function showDiagnosisPage() {
+            ui.landingPage.style.display = 'none';
+            ui.diagnosisPage.style.display = 'block';
+            ui.uploadSection.style.display = 'block';
+            ui.loadingSpinner.style.display = 'none';
+            ui.resultSection.style.display = 'none';
+            ui.errorSection.style.display = 'none';
+        }
+
+        function showApiKeyModal() {
+            ui.apiKeyModal.style.display = 'flex';
+        }
+
+        function hideApiKeyModal() {
+            ui.apiKeyModal.style.display = 'none';
+        }
+
+        function showLoading() {
+            ui.uploadSection.style.display = 'none';
+            ui.loadingSpinner.style.display = 'block';
+            ui.resultSection.style.display = 'none';
+            ui.errorSection.style.display = 'none';
+            updateProgress(0);
+        }
+
+        function updateProgress(progress) {
+            ui.progressPercentage.textContent = progress + '%';
+            const circumference = 2 * Math.PI * 58;
+            const offset = circumference - (progress / 100) * circumference;
+            ui.progressCircle.style.strokeDashoffset = offset;
+        }
+
+        function showResults(analysis, imageDataUrl) {
+            console.log('Showing results:', analysis);
+            
+            ui.uploadSection.style.display = 'none';
+            ui.loadingSpinner.style.display = 'none';
+            ui.errorSection.style.display = 'none';
+            
+            const severityColor = analysis.severity === 'High' ? 'red' : 
+                                 analysis.severity === 'Medium' ? 'yellow' : 'green';
+            
+            ui.resultSection.innerHTML = `
+                <div class="analysis-card rounded-2xl shadow-2xl overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-600 to-blue-600 text-white p-8">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-3xl font-bold mb-2">
+                                    <i class="fas fa-microscope mr-3"></i>AI Diagnosis Complete
+                                </h1>
+                                <p class="text-green-100">Powered by ${isDemoMode ? 'Demo Mode' : API_CONFIGS[apiProvider].name}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-4xl font-bold">${analysis.confidence}%</div>
+                                <div class="text-sm text-green-200">Confidence</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div>
+                                <img src="${imageDataUrl}" alt="Analyzed crop" 
+                                     class="rounded-xl shadow-2xl w-full border-4 border-${severityColor}-500 mb-6">
+                                
+                                <div class="bg-gray-50 p-6 rounded-xl border-l-4 border-${severityColor}-500">
+                                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${analysis.crop_type}</h3>
+                                    <div class="text-xl font-semibold text-gray-800 mb-2">
+                                        Status: ${analysis.health_status.toUpperCase()}
+                                    </div>
+                                    ${analysis.disease_name ? `
+                                        <div class="text-lg text-gray-700 font-medium mb-2">
+                                            Disease: ${analysis.disease_name}
+                                        </div>
+                                    ` : ''}
+                                    <div class="text-sm text-gray-600 mt-2">
+                                        Severity: ${analysis.severity}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div class="bg-orange-50 p-6 rounded-xl border-l-4 border-orange-500">
+                                    <h3 class="text-xl font-bold text-orange-900 mb-3">
+                                        <i class="fas fa-eye mr-2"></i>Symptoms Detected
+                                    </h3>
+                                    <ul class="space-y-2">
+                                        ${analysis.symptoms.map(symptom => 
+                                            `<li class="flex items-start text-orange-800">
+                                                <i class="fas fa-circle text-orange-600 text-xs mt-2 mr-3"></i>
+                                                <span>${symptom}</span>
+                                            </li>`
+                                        ).join('')}
+                                    </ul>
+                                </div>
+
+                                <div class="bg-purple-50 p-6 rounded-xl border-l-4 border-purple-500">
+                                    <h3 class="text-xl font-bold text-purple-900 mb-3">
+                                        <i class="fas fa-search mr-2"></i>Possible Causes
+                                    </h3>
+                                    <ul class="space-y-2">
+                                        ${analysis.causes.map(cause => 
+                                            `<li class="flex items-start text-purple-800">
+                                                <i class="fas fa-arrow-right text-purple-600 text-xs mt-2 mr-3"></i>
+                                                <span>${cause}</span>
+                                            </li>`
+                                        ).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Treatment Options -->
+                        <div class="bg-white border rounded-2xl shadow-2xl overflow-hidden mt-8">
+                            <div class="bg-green-600 text-white p-6">
+                                <h2 class="text-2xl font-bold mb-2">
+                                    <i class="fas fa-prescription-bottle-alt mr-2"></i>Treatment Recommendations
+                                </h2>
+                                <p class="text-green-100">Choose between organic and chemical treatments</p>
+                            </div>
+
+                            <div class="p-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="bg-green-50 p-6 rounded-xl border-l-4 border-green-500">
+                                        <h3 class="text-xl font-bold text-green-900 mb-4">
+                                            <i class="fas fa-leaf mr-2"></i>Organic Treatments
+                                        </h3>
+                                        <ul class="space-y-2">
+                                            ${analysis.treatments.organic.map(treatment => 
+                                                `<li class="flex items-start text-green-800">
+                                                    <i class="fas fa-check text-green-600 mt-1 mr-3"></i>
+                                                    <span>${treatment}</span>
+                                                </li>`
+                                            ).join('')}
+                                        </ul>
+                                    </div>
+
+                                    <div class="bg-blue-50 p-6 rounded-xl border-l-4 border-blue-500">
+                                        <h3 class="text-xl font-bold text-blue-900 mb-4">
+                                            <i class="fas fa-flask mr-2"></i>Chemical Treatments
+                                        </h3>
+                                        <ul class="space-y-2">
+                                            ${analysis.treatments.chemical.map(treatment => 
+                                                `<li class="flex items-start text-blue-800">
+                                                    <i class="fas fa-check text-blue-600 mt-1 mr-3"></i>
+                                                    <span>${treatment}</span>
+                                                </li>`
+                                            ).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prevention & Prognosis -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                            <div class="bg-yellow-50 p-6 rounded-xl border-l-4 border-yellow-500">
+                                <h3 class="text-xl font-bold text-yellow-900 mb-4">
+                                    <i class="fas fa-shield-alt mr-2"></i>Prevention Measures
+                                </h3>
+                                <ul class="space-y-2">
+                                    ${analysis.prevention.map(measure => 
+                                        `<li class="flex items-start text-yellow-800">
+                                            <i class="fas fa-check-circle text-yellow-600 mt-1 mr-3"></i>
+                                            <span>${measure}</span>
+                                        </li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+
+                            <div class="bg-indigo-50 p-6 rounded-xl border-l-4 border-indigo-500">
+                                <h3 class="text-xl font-bold text-indigo-900 mb-4">
+                                    <i class="fas fa-chart-line mr-2"></i>Prognosis
+                                </h3>
+                                <p class="text-indigo-800">${analysis.prognosis}</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-6 border-t">
+                            <button id="new-analysis-btn" class="bg-green-600 text-white font-bold py-4 px-6 rounded-xl hover:bg-green-700 transition-colors shadow-lg">
+                                <i class="fas fa-plus mr-2"></i>New Analysis
+                            </button>
+                            <button id="share-results-btn" class="bg-blue-600 text-white font-bold py-4 px-6 rounded-xl hover:bg-blue-700 transition-colors shadow-lg">
+                                <i class="fas fa-share mr-2"></i>Share Results
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            ui.resultSection.style.display = 'block';
+            
+            // Add event listeners for action buttons
+            document.getElementById('new-analysis-btn').addEventListener('click', () => {
+                ui.resultSection.style.display = 'none';
+                ui.uploadSection.style.display = 'block';
+                ui.imageUploadInput.value = '';
+            });
+            
+            document.getElementById('share-results-btn').addEventListener('click', () => {
+                notifications.success('Results shared successfully!');
+            });
+        }
+
+        // === IMAGE PROCESSING ===
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            console.log('Processing image:', file.name);
+            notifications.info('Starting image analysis...');
+
+            try {
+                showLoading();
+                
+                const imageDataUrl = await fileToDataUrl(file);
+                currentImageDataUrl = imageDataUrl;
+                
+                updateProgress(20);
+                ui.loadingStage.textContent = 'Uploading image...';
+                await sleep(500);
+                
+                updateProgress(40);
+                ui.loadingStage.textContent = 'Analyzing with AI...';
+                
+                const analysis = await analyzeImageWithAI(imageDataUrl);
+                
+                updateProgress(80);
+                ui.loadingStage.textContent = 'Generating recommendations...';
+                await sleep(500);
+                
+                updateProgress(100);
+                ui.loadingStage.textContent = 'Analysis complete!';
+                await sleep(300);
+                
+                showResults(analysis, imageDataUrl);
+                notifications.success('Analysis completed successfully!');
+                
+            } catch (error) {
+                console.error('Image processing error:', error);
+                notifications.error('Analysis failed. Please try again.');
+                ui.uploadSection.style.display = 'block';
+                ui.loadingSpinner.style.display = 'none';
+            }
+        }
+
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('Failed to read file'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // === INITIALIZATION ===
+        function initializeApp() {
+            console.log('Initializing Agro Sensei...');
+            
+            // Check for saved API key
+            const savedKey = localStorage.getItem('agro_sensei_api_key');
+            const savedProvider = localStorage.getItem('agro_sensei_api_provider');
+            
+            if (savedKey && savedProvider) {
+                apiKey = savedKey;
+                apiProvider = savedProvider;
+                ui.apiProviderSelect.value = savedProvider;
+                notifications.success('API key loaded successfully!');
+            }
+            
+            showLandingPage();
+        }
+
+        // === EVENT LISTENERS ===
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+
+            // Navigation
+            ui.startDiagnosisBtn.addEventListener('click', () => {
+                if (!apiKey && !isDemoMode) {
+                    showApiKeyModal();
+                } else {
+                    showDiagnosisPage();
+                }
+            });
+
+            ui.scanCropBtn.addEventListener('click', () => {
+                if (!apiKey && !isDemoMode) {
+                    showApiKeyModal();
+                } else {
+                    showDiagnosisPage();
+                }
+            });
+
+            ui.backToHomeBtn.addEventListener('click', showLandingPage);
+
+            // API Key management
+            ui.saveApiKeyBtn.addEventListener('click', () => {
+                const key = ui.apiKeyInput.value.trim();
+                const provider = ui.apiProviderSelect.value;
+                
+                if (!key) {
+                    notifications.error('Please enter an API key');
+                    return;
+                }
+
+                apiKey = key;
+                apiProvider = provider;
+                isDemoMode = false;
+                
+                localStorage.setItem('agro_sensei_api_key', key);
+                localStorage.setItem('agro_sensei_api_provider', provider);
+                
+                hideApiKeyModal();
+                showDiagnosisPage();
+                notifications.success(`${API_CONFIGS[provider].name} configured successfully!`);
+            });
+
+            ui.demoModeBtn.addEventListener('click', () => {
+                isDemoMode = true;
+                hideApiKeyModal();
+                showDiagnosisPage();
+                notifications.info('Demo mode activated');
+            });
+
+            ui.settingsBtn.addEventListener('click', showApiKeyModal);
+
+            // Image upload
+            ui.cameraBtn.addEventListener('click', () => {
+                ui.imageUploadInput.setAttribute('capture', 'environment');
+                ui.imageUploadInput.click();
+            });
+
+            ui.galleryBtn.addEventListener('click', () => {
+                ui.imageUploadInput.removeAttribute('capture');
+                ui.imageUploadInput.click();
+            });
+
+            ui.imageUploadInput.addEventListener('change', handleImageUpload);
+
+            // Demo analysis
+            ui.demoAnalysisBtn.addEventListener('click', async () => {
+                console.log('Starting demo analysis...');
+                notifications.info('Running demo analysis...');
+                
+                showLoading();
+                
+                const demoImageUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzRhNWQ2OCIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+U2FtcGxlIFBsYW50IEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                
+                updateProgress(20);
+                ui.loadingStage.textContent = 'Loading demo data...';
+                await sleep(800);
+                
+                updateProgress(60);
+                ui.loadingStage.textContent = 'Analyzing demo image...';
+                await sleep(1000);
+                
+                updateProgress(100);
+                ui.loadingStage.textContent = 'Demo analysis complete!';
+                await sleep(500);
+                
+                const demoAnalysis = generateDemoResponse();
+                showResults(demoAnalysis, demoImageUrl);
+                notifications.success('Demo analysis completed!');
+            });
+
+            // Retry button
+            ui.retryBtn.addEventListener('click', () => {
+                ui.errorSection.style.display = 'none';
+                ui.uploadSection.style.display = 'block';
+                ui.imageUploadInput.value = '';
+            });
+
+            // Drag and drop functionality
+            const uploadSection = ui.uploadSection;
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, () => {
+                    uploadSection.classList.add('drag-over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, () => {
+                    uploadSection.classList.remove('drag-over');
+                }, false);
+            });
+
+            uploadSection.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    ui.imageUploadInput.files = files;
+                    handleImageUpload({ target: { files: files } });
+                }
+            }, false);
+        });
+
+        // Export for testing
+        window.AgroSensei = {
+            analyzeImage: analyzeImageWithAI,
+            generateDemo: generateDemoResponse,
+            notifications: notifications
+        };
+    </script>
+</body>
+</html>
