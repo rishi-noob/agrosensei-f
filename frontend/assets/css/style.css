@@ -1,0 +1,154 @@
+/* Agro Sensei - Main Styles */
+:root {
+    --primary-green: #2d5016;
+    --accent-gold: #d4a574;
+    --earth-brown: #8b6f47;
+    --light-cream: #faf8f5;
+    --dark-soil: #1a1410;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat';
+    background-color: var(--light-cream);
+    color: var(--dark-soil);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat';
+}
+
+.page {
+    display: none;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.feature-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-green) 0%, #3d6a1f 100%);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(45, 80, 22, 0.3);
+}
+
+.input-field:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success { background-color: #10b981; }
+.notification.error { background-color: #ef4444; }
+.notification.warning { background-color: #f59e0b; }
+.notification.info { background-color: #3b82f6; }
+
+.hero-bg {
+    background: linear-gradient(135deg, rgba(45, 80, 22, 0.9) 0%, rgba(139, 111, 71, 0.8) 100%),
+                url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2670&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-left: 4px solid var(--primary-green);
+}
+
+.loading-spinner {
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid var(--primary-green);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.api-key-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.api-key-modal.show {
+    display: flex;
+}
+
+.drag-over {
+    border-color: var(--primary-green) !important;
+    background-color: #f0fdf4 !important;
+}
+
+.crop-result-card {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success { border-left-color: #10b981; background-color: #f0fdf4; }
+.alert-warning { border-left-color: #f59e0b; background-color: #fffbeb; }
+.alert-error { border-left-color: #ef4444; background-color: #fef2f2; }
+
+/* Footer */
+footer a:hover {
+    opacity: 0.9;
+}
+
+.footer-social a {
+    transition: transform 0.2s ease;
+}
+.footer-social a:hover {
+    transform: scale(1.1);
+}

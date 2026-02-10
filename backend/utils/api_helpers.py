@@ -102,7 +102,7 @@ def call_gemini_vision(image_base64, api_key):
     Returns:
         dict: Disease analysis results
     """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     # Extract base64 data if it includes data URL prefix
     if ',' in image_base64:

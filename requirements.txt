@@ -5,4 +5,5 @@ pandas==2.1.4
 numpy==1.26.2
 requests==2.31.0
 Pillow==10.1.0
+vercel-serverless-wsgi==0.4.7
 
