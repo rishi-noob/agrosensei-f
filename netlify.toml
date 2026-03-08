@@ -1,0 +1,10 @@
+ [build]
+   base = "frontend"
+   publish = "."
+   command = ""
+ 
+ # Make sure Netlify includes the redirects file.
+ [[redirects]]
+   from = "/api/*"
+   to = "https://agrosensei-f.onrender.com/api/:splat"
+   status = 200
