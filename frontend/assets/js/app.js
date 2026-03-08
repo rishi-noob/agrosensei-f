@@ -3,13 +3,27 @@
  */
 
 // API Configuration
-// In production (Vercel), the Flask backend is exposed under `/api`
-// via the serverless function in `api/index.py`. Locally, you can still
-// run the backend on http://localhost:5000 by overriding this if needed.
-const API_BASE_URL =
-    (typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost'))
-        ? window.location.origin.replace(/\/$/, '')
-        : 'http://localhost:5000';
+// When opening index.html via file:// or from localhost, use the Flask backend at port 5000.
+// In production (deployed), the backend is proxied under the same origin.
+function getApiBaseUrl() {
+    if (typeof window === 'undefined') return 'http://localhost:5000';
+    const { origin, protocol, hostname } = window.location;
+    // file:// or null/undefined origin (opening HTML file directly) → use backend on localhost
+    if (!origin || origin === 'null' || protocol === 'file:' || origin.startsWith('file:'))
+        return 'http://localhost:5000';
+
+    // Served locally (including Live Server on 127.0.0.1) → backend on port 5000
+    const isLoopbackHost =
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '0.0.0.0' ||
+        hostname === '[::1]';
+    if (isLoopbackHost) return 'http://localhost:5000';
+
+    // Deployed site (not loopback) → same origin (backend proxied at /api or similar)
+    return origin.replace(/\/$/, '');
+}
+const API_BASE_URL = getApiBaseUrl();
 
 // Direct AI API config (used when backend is unavailable)
 const API_CONFIGS = {
