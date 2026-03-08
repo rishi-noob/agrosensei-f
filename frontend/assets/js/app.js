@@ -4,10 +4,16 @@
 
 // API Configuration
 // When opening index.html via file:// or from localhost, use the Flask backend at port 5000.
-// In production (deployed), the backend is proxied under the same origin.
+// In production (deployed), the backend can be proxied under the same origin (e.g. Netlify redirects),
+// or called directly (useful if the proxy times out during cold starts).
 function getApiBaseUrl() {
     if (typeof window === 'undefined') return 'http://localhost:5000';
     const { origin, protocol, hostname } = window.location;
+
+    // Optional global override (can be set in index.html before app.js loads)
+    if (window.__AGRO_SENSEI_API_BASE_URL__) {
+        return String(window.__AGRO_SENSEI_API_BASE_URL__).replace(/\/$/, '');
+    }
     // file:// or null/undefined origin (opening HTML file directly) → use backend on localhost
     if (!origin || origin === 'null' || protocol === 'file:' || origin.startsWith('file:'))
         return 'http://localhost:5000';
@@ -19,6 +25,10 @@ function getApiBaseUrl() {
         hostname === '0.0.0.0' ||
         hostname === '[::1]';
     if (isLoopbackHost) return 'http://localhost:5000';
+
+    // Netlify deploys: call Render directly (avoids proxy timeouts during Render cold starts)
+    const isNetlify = hostname.endsWith('.netlify.app') || hostname.endsWith('.netlify.live');
+    if (isNetlify) return 'https://agrosensei-f.onrender.com';
 
     // Deployed site (not loopback) → same origin (backend proxied at /api or similar)
     return origin.replace(/\/$/, '');
@@ -118,6 +128,23 @@ function setupEventListeners() {
     if (demoBtn) demoBtn.addEventListener('click', enableDemoMode);
     const allowLocBtn = document.getElementById('marketplace-allow-location');
     if (allowLocBtn) allowLocBtn.addEventListener('click', requestMarketplaceLocation);
+
+    // Mobile menu UX
+    document.addEventListener('click', (e) => {
+        if (!isMobileMenuOpen()) return;
+        const menu = document.getElementById('mobile-menu');
+        const btn = document.querySelector('button[aria-controls="mobile-menu"]');
+        if (!menu || !btn) return;
+        if (menu.contains(e.target) || btn.contains(e.target)) return;
+        hideMobileMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideMobileMenu();
+    });
+    window.addEventListener('resize', () => {
+        // On md+ layout the desktop nav is visible, so close the mobile panel.
+        if (window.innerWidth >= 768) hideMobileMenu();
+    });
 }
 
 // Crop Recommendation
@@ -141,15 +168,26 @@ async function submitCropForm(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
-        const data = await response.json();
-        if (data.success) {
+        const text = await response.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (_) {}
+
+        if (!response.ok) {
+            const msg =
+                (data && (data.error || data.message)) ||
+                `Request failed (${response.status}). Please retry in a few seconds.`;
+            showNotification(msg, 'error');
+            return;
+        }
+
+        if (data && data.success) {
             displayCropResults(data);
             showNotification('Crop recommendation generated successfully!', 'success');
         } else {
-            showNotification(data.error || 'Failed to get recommendation', 'error');
+            showNotification((data && data.error) || 'Failed to get recommendation', 'error');
         }
     } catch (error) {
-        showNotification('Server error. Please make sure the backend is running.', 'error');
+        showNotification('Server error. If Render is sleeping, retry after a few seconds.', 'error');
         console.error('Error:', error);
     } finally {
         submitBtn.disabled = false;
@@ -576,8 +614,32 @@ function showNotification(message, type) {
     }, 5000);
 }
 
+function isMobileMenuOpen() {
+    const menu = document.getElementById('mobile-menu');
+    return !!menu && !menu.classList.contains('hidden');
+}
+
+function setMobileMenuOpen(open) {
+    const menu = document.getElementById('mobile-menu');
+    if (!menu) return;
+    menu.classList.toggle('hidden', !open);
+
+    const btn = document.querySelector('button[aria-controls="mobile-menu"]');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+    const icon = document.getElementById('mobile-menu-icon');
+    if (icon) {
+        icon.classList.toggle('fa-bars', !open);
+        icon.classList.toggle('fa-xmark', open);
+    }
+}
+
 function toggleMobileMenu() {
-    showNotification('Mobile menu coming soon', 'info');
+    setMobileMenuOpen(!isMobileMenuOpen());
+}
+
+function hideMobileMenu() {
+    setMobileMenuOpen(false);
 }
 
 // Expose for onclick handlers
@@ -588,4 +650,5 @@ window.runDemoAnalysis = runDemoAnalysis;
 window.resetDiseaseForm = resetDiseaseForm;
 window.filterShops = filterShops;
 window.toggleMobileMenu = toggleMobileMenu;
+window.hideMobileMenu = hideMobileMenu;
 window.showApiKeyModal = showApiKeyModal;
